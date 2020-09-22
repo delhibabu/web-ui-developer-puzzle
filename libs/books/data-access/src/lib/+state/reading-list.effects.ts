@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Actions, createEffect, ofType, OnInitEffects } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, map } from 'rxjs/operators';
-import { ReadingListItem } from '@tmo/shared/models';
+import { Book, ReadingListItem } from '@tmo/shared/models';
 import * as ReadingListActions from './reading-list.actions';
 
 @Injectable()
@@ -15,9 +15,7 @@ export class ReadingListEffects implements OnInitEffects {
         this.http
           .get<ReadingListItem[]>('/api/reading-list')
           .pipe(
-            map(data =>
-              ReadingListActions.loadReadingListSuccess({ list: data })
-            )
+            map(data => ReadingListActions.loadReadingListSuccess({ list: data }))
           )
       ),
       catchError(error =>
@@ -32,9 +30,13 @@ export class ReadingListEffects implements OnInitEffects {
       concatMap(({ book }) =>
         this.http.post('/api/reading-list', book).pipe(
           map(() => ReadingListActions.confirmedAddToReadingList({ book })),
-          catchError(() =>
-            of(ReadingListActions.failedAddToReadingList({ book }))
-          )
+          catchError(error => {
+            const item: ReadingListItem = {
+              ...book, 
+              bookId: book.id
+            }
+            return of(ReadingListActions.failedAddToReadingList({ item }));
+          })
         )
       )
     )
@@ -48,9 +50,13 @@ export class ReadingListEffects implements OnInitEffects {
           map(() =>
             ReadingListActions.confirmedRemoveFromReadingList({ item })
           ),
-          catchError(() =>
-            of(ReadingListActions.failedRemoveFromReadingList({ item }))
-          )
+          catchError(error => {
+            const book: Book = {
+              ...item,
+              id: item.bookId
+            }
+            return of(ReadingListActions.failedRemoveFromReadingList({ book }));
+          })
         )
       )
     )
@@ -60,5 +66,5 @@ export class ReadingListEffects implements OnInitEffects {
     return ReadingListActions.init();
   }
 
-  constructor(private actions$: Actions, private http: HttpClient) {}
+  constructor(private readonly actions$: Actions, private readonly http: HttpClient) {}
 }
