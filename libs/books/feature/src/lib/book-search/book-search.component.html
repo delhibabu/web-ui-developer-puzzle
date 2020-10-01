@@ -32,7 +32,7 @@
             <strong>Published:</strong> {{ book.publishedDate | date: 'MM/dd/yyyy' }}
           </div>
           <p [innerHTML]="book.description"></p>
-          <div>
+          <div data-testing="add-to-list">
             <button
               mat-flat-button
               color="primary"

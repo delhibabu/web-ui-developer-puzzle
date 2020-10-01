@@ -5,6 +5,12 @@ import { of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, map } from 'rxjs/operators';
 import { Book, ReadingListItem } from '@tmo/shared/models';
 import * as ReadingListActions from './reading-list.actions';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Store } from '@ngrx/store';
+import {
+  addToReadingList,
+  removeFromReadingList
+} from '@tmo/books/data-access';
 
 @Injectable()
 export class ReadingListEffects implements OnInitEffects {
@@ -29,7 +35,19 @@ export class ReadingListEffects implements OnInitEffects {
       ofType(ReadingListActions.addToReadingList),
       concatMap(({ book }) =>
         this.http.post('/api/reading-list', book).pipe(
-          map(() => ReadingListActions.confirmedAddToReadingList({ book })),
+          map(() => {
+            const snackBarRef = this.snackBar.open(
+              'Remove' + ' ' + book.title + ' ' + 'from reading list', 'Undo', { duration: 1000 }
+            );
+            snackBarRef.onAction().subscribe(() => {
+              const item: ReadingListItem = {
+                ...book, 
+                bookId: book.id
+              }
+              this.store.dispatch(removeFromReadingList({ item }));
+            });
+            return ReadingListActions.confirmedAddToReadingList({ book });
+          }),
           catchError(error => {
             const item: ReadingListItem = {
               ...book, 
@@ -47,9 +65,19 @@ export class ReadingListEffects implements OnInitEffects {
       ofType(ReadingListActions.removeFromReadingList),
       concatMap(({ item }) =>
         this.http.delete(`/api/reading-list/${item.bookId}`).pipe(
-          map(() =>
-            ReadingListActions.confirmedRemoveFromReadingList({ item })
-          ),
+          map(() => {
+            const snackBarRef = this.snackBar.open(
+              'Add' + ' ' + item.title + ' ' + 'to reading list', 'Undo', { duration: 1000 }
+            );
+            snackBarRef.onAction().subscribe(() => {
+              const book: Book = {
+                ...item,
+                id: item.bookId
+              }
+              this.store.dispatch(addToReadingList({ book }));
+            });
+            return ReadingListActions.confirmedRemoveFromReadingList({ item });
+          }),
           catchError(error => {
             const book: Book = {
               ...item,
@@ -66,5 +94,10 @@ export class ReadingListEffects implements OnInitEffects {
     return ReadingListActions.init();
   }
 
-  constructor(private readonly actions$: Actions, private readonly http: HttpClient) {}
+  constructor(
+    private readonly actions$: Actions,
+    private readonly http: HttpClient,
+    private readonly snackBar: MatSnackBar,
+    private readonly store: Store
+  ) {}
 }
