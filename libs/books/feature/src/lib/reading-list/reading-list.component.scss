@@ -45,3 +45,22 @@
   font-size: 1rem;
   color: $gray60;
 }
+
+.finished-text {
+  padding: 5px;
+  max-width: 300px;
+  background-color: $green;
+  margin: 5px;
+  border-radius: 10px;
+
+  .mark-finish-text {
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-left: $spacing-med;
+    margin-bottom: $spacing-xs;
+  }
+}
+
+.mark-finish-circle {
+  color: $green;
+}
